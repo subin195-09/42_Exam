@@ -92,8 +92,10 @@ void deliver(int fd)
 void add_client(int fd)
 {
   fd_max = fd > fd_max ? fd : fd_max;
+
   idx[fd] = clients++;
   msg[fd] = NULL;
+
   FD_SET(fd, &fds);
   sprintf(wbuf, "server: client %d just arrived\n", idx[fd]);
   notify(fd, wbuf);
@@ -111,6 +113,7 @@ void remove_client(int fd)
 
 int create_client(void)
 {
+  FD_ZERO(&fds);
   fd_max = socket(AF_INET, SOCK_STREAM, 0);
   if (fd_max < 0)
     fatal();
@@ -127,11 +130,10 @@ int main(int ac, char **av)
     exit(1);
   }
 
-  FD_ZERO(&fds);
   int sockfd = create_client();
+
   struct sockaddr_in servaddr;
   bzero(&servaddr, sizeof(servaddr));
-
   servaddr.sin_family = AF_INET;
   servaddr.sin_addr.s_addr = 127 | (1 << 24);              // htonl(2130706433); //127.0.0.1
   servaddr.sin_port = atoi(av[1]) >> 8 | atoi(av[1]) << 8; // htons(8081);
@@ -140,6 +142,7 @@ int main(int ac, char **av)
     fatal();
   if (listen(sockfd, SOMAXCONN))
     fatal();
+
   while (42)
   {
     rfds = wfds = fds;
